@@ -1,0 +1,28 @@
+{
+    "name": "KPSPAMS",
+    "short_name": "KPSPAMS",
+    "description": "aplikasi mengelola air pelanggan",
+    "lang": "id",
+    "id": "/?source=pwa",
+    "start_url": "/?source=pwa",
+    "scope": "/",
+    "display": "fullscreen",
+    "display_override": ["fullscreen", "standalone"],
+    "orientation": "portrait",
+    "background_color": "#0d63c1",
+    "theme_color": "#0d63c1",
+    "icons": [
+        {
+            "src": "/icons/kpspams-icon.svg",
+            "sizes": "512x512",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "/icons/kpspams-icon.svg",
+            "sizes": "512x512",
+            "type": "image/svg+xml",
+            "purpose": "maskable"
+        }
+    ]
+}
