@@ -12,7 +12,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Configure paths for Vercel serverless (writable /tmp directory)
+        if (isset($_ENV['VERCEL']) || getenv('VERCEL')) {
+            config(['view.compiled' => '/tmp/views']);
+            config(['cache.stores.file.path' => '/tmp/cache']);
+        }
     }
 
     /**

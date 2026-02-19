@@ -22,6 +22,9 @@ class DatabaseSeeder extends Seeder
             'phone_number' => '082269245660',
             'role' => User::ROLE_ADMIN,
             'password' => 'admin',
+            'email_verified_at' => now(),
+            'status' => User::STATUS_APPROVED,
+            'approved_at' => now(),
         ]);
 
         User::updateOrCreate([
@@ -31,6 +34,9 @@ class DatabaseSeeder extends Seeder
             'phone_number' => '082111223344',
             'role' => User::ROLE_PETUGAS,
             'password' => 'password123',
+            'email_verified_at' => now(),
+            'status' => User::STATUS_APPROVED,
+            'approved_at' => now(),
         ]);
     }
 }
