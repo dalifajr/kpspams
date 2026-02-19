@@ -18,7 +18,7 @@
 /public/storage
 /storage/*.key
 /storage/pail
-/vendor
+# /vendor - uncommented for Vercel deployment
 Homestead.json
 Homestead.yaml
 Thumbs.db
