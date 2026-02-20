@@ -24,5 +24,9 @@ foreach ($dirs as $dir) {
     }
 }
 
+// Menyesuaikan Server Variables untuk Vercel agar request uri /api/ tidak terpotong
+$_SERVER['SCRIPT_NAME'] = '/index.php';
+$_SERVER['SCRIPT_FILENAME'] = __DIR__ . '/../public/index.php';
+
 // Forward to the public/index.php
 require __DIR__ . '/../public/index.php';
