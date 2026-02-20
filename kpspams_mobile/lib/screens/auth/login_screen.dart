@@ -13,7 +13,14 @@ class _LoginScreenState extends State<LoginScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  void _submitLogin() async {
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitLogin() async {
     final auth = context.read<AuthProvider>();
 
     final phone = _phoneController.text.trim();
@@ -30,7 +37,6 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
-      // Nanti akan redirect ke Dashboard
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Login berhasil!')));
@@ -43,80 +49,95 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final authProvider = context.watch<AuthProvider>();
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 60),
-              Icon(
-                Icons.water_drop_rounded,
-                size: 80,
-                color: Theme.of(context).colorScheme.primary,
-              ),
               const SizedBox(height: 24),
-              Text(
-                'KPSPAMS Mobile',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(28),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Masuk untuk melanjutkan',
-                textAlign: TextAlign.center,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
-              ),
-              const SizedBox(height: 48),
-
-              TextField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: InputDecoration(
-                  labelText: 'Nomor Handphone',
-                  hintText: 'Contoh: 08123456789',
-                  prefixIcon: Icon(
-                    Icons.phone_android,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.water_drop_rounded,
+                      size: 44,
+                      color: colorScheme.onPrimaryContainer,
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'KPSPAMS Mobile',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        color: colorScheme.onPrimaryContainer,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Masuk untuk melanjutkan aktivitas pencatatan dan pembayaran.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
-
-              TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: 'Kata Sandi',
-                  prefixIcon: Icon(
-                    Icons.lock,
-                    color: Theme.of(context).colorScheme.primary,
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Login Akun',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      TextField(
+                        controller: _phoneController,
+                        keyboardType: TextInputType.phone,
+                        decoration: const InputDecoration(
+                          labelText: 'Nomor Handphone',
+                          hintText: 'Contoh: 08123456789',
+                          prefixIcon: Icon(Icons.phone_android_rounded),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Kata Sandi',
+                          prefixIcon: Icon(Icons.lock_rounded),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      authProvider.isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : ElevatedButton.icon(
+                              onPressed: _submitLogin,
+                              icon: const Icon(Icons.login_rounded),
+                              label: const Text('Masuk'),
+                            ),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
-
-              authProvider.isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : ElevatedButton(
-                      onPressed: _submitLogin,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: const Text(
-                        'Masuk',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ),
             ],
           ),
         ),

@@ -27,6 +27,10 @@ class MeterReadingModel {
   final String? usageM3;
   final String? status;
   final String? recordedAt;
+  final String? billPublishedAt;
+  final int? billId;
+  final String? billStatus;
+  final int? billRemaining;
   final CustomerModel? customer;
 
   MeterReadingModel({
@@ -38,6 +42,10 @@ class MeterReadingModel {
     this.usageM3,
     this.status,
     this.recordedAt,
+    this.billPublishedAt,
+    this.billId,
+    this.billStatus,
+    this.billRemaining,
     this.customer,
   });
 
@@ -51,6 +59,10 @@ class MeterReadingModel {
       usageM3: json['usage_m3']?.toString(),
       status: json['status'],
       recordedAt: json['recorded_at'],
+        billPublishedAt: json['bill_published_at'],
+        billId: json['bill']?['id'],
+        billStatus: json['bill']?['status'],
+        billRemaining: json['bill']?['remaining'],
       customer: json['customer'] != null
           ? CustomerModel.fromJson(json['customer'])
           : null,

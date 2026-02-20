@@ -22,7 +22,7 @@ class MeterReadingController extends Controller
         $user = $request->user();
 
         $query = MeterReading::query()
-            ->with(['customer', 'area'])
+            ->with(['customer', 'area', 'bill'])
             ->where('meter_period_id', $meterPeriod->id);
 
         if (!$user->isAdmin()) {

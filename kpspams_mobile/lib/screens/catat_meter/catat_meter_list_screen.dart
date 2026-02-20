@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/meter_provider.dart';
+import '../../widgets/shimmer_loading.dart';
+import 'catat_meter_detail_screen.dart';
 
 class CatatMeterListScreen extends StatefulWidget {
   const CatatMeterListScreen({super.key});
@@ -14,162 +16,141 @@ class _CatatMeterListScreenState extends State<CatatMeterListScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<MeterProvider>().fetchMeterReadings();
+      context.read<MeterProvider>().fetchMeterPeriods();
     });
   }
 
-  void _showInputForm(BuildContext context, dynamic reading) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => _MeterInputForm(reading: reading),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final meterProvider = context.watch<MeterProvider>();
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final provider = context.watch<MeterProvider>();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Daftar Catat Meter'),
+        title: const Text('Catat Meter'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => context.read<MeterProvider>().fetchMeterReadings(),
+            onPressed: () => context.read<MeterProvider>().fetchMeterPeriods(),
+            icon: const Icon(Icons.refresh_rounded),
           ),
         ],
       ),
-      body: meterProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : meterProvider.errorMessage != null
-          ? Center(child: Text(meterProvider.errorMessage!))
-          : meterProvider.readings.isEmpty
-          ? const Center(child: Text('Tidak ada jadwal baca meter.'))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: meterProvider.readings.length,
-              itemBuilder: (context, index) {
-                final reading = meterProvider.readings[index];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.primaryContainer,
-                      child: Icon(
-                        Icons.speed,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                    title: Text(
-                      reading.customer?.name ?? 'Anonim',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text(
-                      'ID: ${reading.customer?.customerCode}\nStand Awal: ${reading.startReading ?? 0} m³',
-                    ),
-                    isThreeLine: true,
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _showInputForm(context, reading),
-                  ),
-                );
-              },
-            ),
-    );
-  }
-}
-
-class _MeterInputForm extends StatefulWidget {
-  final dynamic reading;
-  const _MeterInputForm({required this.reading});
-
-  @override
-  State<_MeterInputForm> createState() => _MeterInputFormState();
-}
-
-class _MeterInputFormState extends State<_MeterInputForm> {
-  final _endReadingController = TextEditingController();
-  final _noteController = TextEditingController();
-
-  void _submit() async {
-    final endReading = _endReadingController.text;
-    final notes = _noteController.text;
-
-    if (endReading.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Stand akhir wajib diisi')));
-      return;
-    }
-
-    final provider = context.read<MeterProvider>();
-    final success = await provider.submitReading(
-      widget.reading.id,
-      endReading,
-      notes,
-    );
-
-    if (!mounted) return;
-
-    if (success) {
-      Navigator.pop(context);
-      provider.fetchMeterReadings();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Berhasil mencatat meter!')));
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(provider.errorMessage ?? 'Gagal menyimpan')),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-        left: 20,
-        right: 20,
-        top: 20,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: Column(
         children: [
-          Text(
-            'Catat Meter: ${widget.reading.customer?.name}',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Stand Awal (Bulan Lalu): ${widget.reading.startReading ?? 0} m³',
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _endReadingController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Stand Akhir Saat Ini (m³)',
-              filled: true,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: colorScheme.secondaryContainer,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Periode Pencatatan',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: colorScheme.onSecondaryContainer,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Pilih periode untuk melihat detail pencatatan pelanggan.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSecondaryContainer,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _noteController,
-            decoration: const InputDecoration(
-              labelText: 'Catatan (opsional)',
-              filled: true,
-            ),
+          Expanded(
+            child: provider.isLoading
+                ? const ShimmerListLoading(itemCount: 5)
+                : provider.errorMessage != null
+                ? Center(child: Text(provider.errorMessage!))
+                : provider.periods.isEmpty
+                ? const Center(child: Text('Belum ada periode catat meter.'))
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    itemCount: provider.periods.length,
+                    itemBuilder: (context, index) {
+                      final period = provider.periods[index];
+                      final progress = period.summary.total == 0
+                          ? 0.0
+                          : (period.summary.recorded / period.summary.total)
+                                .clamp(0.0, 1.0);
+
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(24),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => CatatMeterDetailScreen(
+                                  periodId: period.id,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(14),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.primaryContainer,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(
+                                        Icons.calendar_month_rounded,
+                                        size: 18,
+                                        color: colorScheme.onPrimaryContainer,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        'Periode ${period.label}',
+                                        style: theme.textTheme.titleSmall?.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                    const Icon(Icons.chevron_right_rounded),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Tercatat ${period.summary.recorded}/${period.summary.total} • Pending ${period.summary.pending}',
+                                  style: theme.textTheme.bodyMedium,
+                                ),
+                                const SizedBox(height: 8),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: LinearProgressIndicator(
+                                    minHeight: 8,
+                                    value: progress,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
           ),
-          const SizedBox(height: 20),
-          ElevatedButton(onPressed: _submit, child: const Text('Simpan')),
-          const SizedBox(height: 20),
         ],
       ),
     );

@@ -27,7 +27,7 @@ class BillingProvider extends ChangeNotifier {
 
     try {
       final response = await _apiService.client.get(
-        '/customers/$customerId/bills',
+        '/auth/customers/$customerId/bills',
       );
 
       _customerInfo = response.data['customer'];
@@ -37,7 +37,7 @@ class BillingProvider extends ChangeNotifier {
       if (e.response?.statusCode == 403) {
         _errorMessage = "Anda tidak memiliki akses ke pelanggan ini.";
       } else {
-        _errorMessage = e.message;
+        _errorMessage = ApiService.extractErrorMessage(e);
       }
     } catch (e) {
       _errorMessage = 'Terjadi kesalahan sistem.';
@@ -51,6 +51,7 @@ class BillingProvider extends ChangeNotifier {
     int billId,
     int amount,
     String method,
+    String? referenceNumber,
     String? notes,
   ) async {
     _isLoading = true;
@@ -59,8 +60,13 @@ class BillingProvider extends ChangeNotifier {
 
     try {
       await _apiService.client.post(
-        '/bills/$billId/pay',
-        data: {'amount': amount, 'method': method, 'notes': notes},
+        '/auth/bills/$billId/pay',
+        data: {
+          'amount': amount,
+          'method': method,
+          'reference_number': referenceNumber,
+          'notes': notes,
+        },
       );
 
       _isLoading = false;
@@ -72,7 +78,43 @@ class BillingProvider extends ChangeNotifier {
       }
       return true;
     } on DioException catch (e) {
-      _errorMessage = e.response?.data['message'] ?? e.message;
+      _errorMessage = ApiService.extractErrorMessage(e);
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> publishBillForReading(int meterReadingId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _apiService.client.post('/auth/meter-readings/$meterReadingId/publish');
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on DioException catch (e) {
+      _errorMessage = ApiService.extractErrorMessage(e);
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> unpublishBillForReading(int meterReadingId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _apiService.client.post('/auth/meter-readings/$meterReadingId/unpublish');
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on DioException catch (e) {
+      _errorMessage = ApiService.extractErrorMessage(e);
       _isLoading = false;
       notifyListeners();
       return false;

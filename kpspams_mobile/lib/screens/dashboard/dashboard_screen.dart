@@ -1,141 +1,114 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../app_routes.dart';
 import '../../providers/auth_provider.dart';
-import '../catat_meter/catat_meter_list_screen.dart';
-import '../billing/tagihan_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final user = context.watch<AuthProvider>().user;
 
+    final menus = _menusForRole(user?.role);
+
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
-        child: Column(
-          children: [
-            // Header / App Bar Custom
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 28,
+                        backgroundColor: colorScheme.onPrimaryContainer.withAlpha(28),
+                        backgroundImage: user?.avatarUrl != null
+                            ? NetworkImage(user!.avatarUrl!)
+                            : null,
+                        child: user?.avatarUrl == null
+                            ? Icon(
+                                Icons.person,
+                                color: colorScheme.onPrimaryContainer,
+                                size: 28,
+                              )
+                            : null,
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Halo, ${user?.name ?? 'Pengguna'}',
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                color: colorScheme.onPrimaryContainer,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Peran: ${user?.role.toUpperCase() ?? '-'}',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onPrimaryContainer,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Logout',
+                        onPressed: () => context.read<AuthProvider>().logout(),
+                        icon: Icon(
+                          Icons.logout_rounded,
+                          color: colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.white24,
-                    backgroundImage: user?.avatarUrl != null
-                        ? NetworkImage(user!.avatarUrl!)
-                        : null,
-                    child: user?.avatarUrl == null
-                        ? const Icon(
-                            Icons.person,
-                            size: 30,
-                            color: Colors.white,
-                          )
-                        : null,
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                child: Text(
+                  'Menu Fitur',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Halo, ${user?.name ?? 'Pengguna'}!',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          user?.role.toUpperCase() ?? '-',
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.logout, color: Colors.white),
-                    onPressed: () {
-                      context.read<AuthProvider>().logout();
-                    },
-                  ),
-                ],
+                ),
               ),
             ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+              sliver: SliverGrid.builder(
+                itemCount: menus.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 0.98,
+                ),
+                itemBuilder: (context, index) {
+                  final item = menus[index];
 
-            Expanded(
-              child: GridView.count(
-                padding: const EdgeInsets.all(24),
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                children: [
-                  _buildMenuCard(
-                    context,
-                    title: 'Catat\nMeter',
-                    icon: Icons.speed,
-                    color: Colors.blue,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const CatatMeterListScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildMenuCard(
-                    context,
-                    title: 'Tagihan\nPembayaran',
-                    icon: Icons.receipt_long,
-                    color: Colors.green,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const TagihanScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildMenuCard(
-                    context,
-                    title: 'Data\nPelanggan',
-                    icon: Icons.people_alt,
-                    color: Colors.orange,
-                    onTap: () {
-                      // TODO: Navigate to Pelanggan
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Comming Soon')),
-                      );
-                    },
-                  ),
-                  _buildMenuCard(
-                    context,
-                    title: 'Profil\nAkun',
-                    icon: Icons.manage_accounts,
-                    color: Colors.purple,
-                    onTap: () {
-                      // TODO: Navigate to Profil
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Comming Soon')),
-                      );
-                    },
-                  ),
-                ],
+                  return _MenuCard(
+                    title: item.title,
+                    subtitle: item.subtitle,
+                    icon: item.icon,
+                    onTap: () => Navigator.pushNamed(context, item.routeName),
+                  );
+                },
               ),
             ),
           ],
@@ -144,40 +117,108 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuCard(
-    BuildContext context, {
-    required String title,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
+  List<_DashboardMenuItem> _menusForRole(String? role) {
+    final baseMenus = <_DashboardMenuItem>[
+      const _DashboardMenuItem(
+        title: 'Catat Meter',
+        subtitle: 'Periode & pencatatan',
+        icon: Icons.speed_rounded,
+        routeName: AppRoutes.catatMeter,
+      ),
+      const _DashboardMenuItem(
+        title: 'Tagihan',
+        subtitle: 'Pembayaran pelanggan',
+        icon: Icons.receipt_long_rounded,
+        routeName: AppRoutes.billing,
+      ),
+      const _DashboardMenuItem(
+        title: 'Pelanggan',
+        subtitle: 'Data pelanggan',
+        icon: Icons.groups_2_rounded,
+        routeName: AppRoutes.customers,
+      ),
+      const _DashboardMenuItem(
+        title: 'Data Master',
+        subtitle: 'Area & golongan',
+        icon: Icons.account_tree_rounded,
+        routeName: AppRoutes.masterData,
+      ),
+      const _DashboardMenuItem(
+        title: 'Profil',
+        subtitle: 'Akun & avatar',
+        icon: Icons.manage_accounts_rounded,
+        routeName: AppRoutes.profile,
+      ),
+    ];
+
+    if (role == 'user') {
+      return baseMenus
+          .where((item) =>
+              item.routeName == AppRoutes.billing ||
+              item.routeName == AppRoutes.profile)
+          .toList();
+    }
+
+    return baseMenus;
+  }
+}
+
+class _MenuCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _MenuCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: InkWell(
+        borderRadius: BorderRadius.circular(24),
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(14),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  shape: BoxShape.circle,
+                  color: colorScheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icon, size: 36, color: color),
+                child: Icon(
+                  icon,
+                  color: colorScheme.onSecondaryContainer,
+                  size: 22,
+                ),
               ),
-              const SizedBox(height: 12),
+              const Spacer(),
               Text(
                 title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -185,4 +226,18 @@ class DashboardScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+class _DashboardMenuItem {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final String routeName;
+
+  const _DashboardMenuItem({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.routeName,
+  });
 }

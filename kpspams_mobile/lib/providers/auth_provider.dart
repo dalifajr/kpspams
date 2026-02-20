@@ -14,6 +14,7 @@ class AuthProvider extends ChangeNotifier {
   bool _isInitChecked = false;
 
   bool get isAuthenticated => _user != null;
+  bool get requiresPasswordUpdate => _user?.mustUpdatePassword ?? false;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isInitChecked => _isInitChecked;
@@ -59,17 +60,16 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } on DioException catch (e) {
       if (e.response != null && e.response!.statusCode == 422) {
-        _errorMessage =
-            e.response!.data['message'] ?? 'Nomor HP atau Password salah.';
+        _errorMessage = ApiService.extractErrorMessage(e);
       } else if (e.response != null && e.response!.statusCode == 403) {
-        _errorMessage = e.response!.data['message'] ?? 'Akun belum disetujui.';
+        _errorMessage = ApiService.extractErrorMessage(e);
       } else {
-        _errorMessage = 'Terjadi kesalahan jaringan atau server.';
+        _errorMessage = ApiService.extractErrorMessage(e);
       }
       _setLoading(false);
       return false;
     } catch (e) {
-      _errorMessage = 'Terjadi kesalahan sistem.';
+      _errorMessage = 'SysErr: $e';
       _setLoading(false);
       return false;
     }
@@ -85,6 +85,83 @@ class AuthProvider extends ChangeNotifier {
     await _apiService.storage.delete(key: 'auth_token');
     _user = null;
     notifyListeners();
+  }
+
+  Future<bool> updateProfile(String name, String addressShort) async {
+    _setLoading(true);
+    _clearError();
+    try {
+      final response = await _apiService.client.put(
+        '/auth/profile/update',
+        data: {'name': name, 'address_short': addressShort},
+      );
+      _user = UserModel.fromJson(response.data['user']);
+      _setLoading(false);
+      return true;
+    } on DioException catch (e) {
+      _errorMessage = ApiService.extractErrorMessage(e);
+      _setLoading(false);
+      return false;
+    } catch (e) {
+      _errorMessage = 'Terjadi kesalahan sistem.';
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  Future<bool> forceUpdatePassword(
+    String password,
+    String passwordConfirmation,
+  ) async {
+    _setLoading(true);
+    _clearError();
+    try {
+      final response = await _apiService.client.put(
+        '/auth/password/force-update',
+        data: {
+          'password': password,
+          'password_confirmation': passwordConfirmation,
+        },
+      );
+
+      _user = UserModel.fromJson(response.data['user']);
+      _setLoading(false);
+      return true;
+    } on DioException catch (e) {
+      _errorMessage = ApiService.extractErrorMessage(e);
+      _setLoading(false);
+      return false;
+    } catch (e) {
+      _errorMessage = 'Terjadi kesalahan sistem.';
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  Future<bool> uploadAvatar(String imagePath) async {
+    _setLoading(true);
+    _clearError();
+    try {
+      final formData = FormData.fromMap({
+        'avatar': await MultipartFile.fromFile(imagePath),
+      });
+      await _apiService.client.post('/auth/profile/avatar', data: formData);
+
+      // Update data user di dalam state
+      final userResponse = await _apiService.client.get('/auth/me');
+      _user = UserModel.fromJson(userResponse.data['user']);
+
+      _setLoading(false);
+      return true;
+    } on DioException catch (e) {
+      _errorMessage = ApiService.extractErrorMessage(e);
+      _setLoading(false);
+      return false;
+    } catch (e) {
+      _errorMessage = 'Terjadi kesalahan sistem.';
+      _setLoading(false);
+      return false;
+    }
   }
 
   void _setLoading(bool value) {

@@ -16,6 +16,99 @@ use Illuminate\Support\Facades\DB;
 class BillingController extends Controller
 {
     /**
+     * Publish bill for a recorded meter reading
+     */
+    public function publish(Request $request, MeterReading $meterReading): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$user->isAdmin()) {
+            $allowedAreas = $user->assignedAreas()->pluck('areas.id')->all();
+            if (empty($allowedAreas) && $user->area_id) {
+                $allowedAreas = [$user->area_id];
+            }
+            if (!in_array($meterReading->area_id, $allowedAreas, true)) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+        }
+
+        if (!$meterReading->recorded_at) {
+            return response()->json(['message' => 'Meter belum dicatat.'], 400);
+        }
+
+        if ($meterReading->bill_published_at) {
+            return response()->json(['message' => 'Tagihan sudah diterbitkan.'], 400);
+        }
+
+        DB::transaction(function () use ($meterReading, $user) {
+            $meterReading->update([
+                'bill_published_at' => Carbon::now(),
+                'bill_published_by' => $user->id,
+                'status' => 'unpaid',
+            ]);
+
+            $meterReading->loadMissing('period');
+
+            Bill::create([
+                'meter_reading_id' => $meterReading->id,
+                'customer_id' => $meterReading->customer_id,
+                'meter_period_id' => $meterReading->meter_period_id,
+                'year' => $meterReading->period->year,
+                'month' => $meterReading->period->month,
+                'water_usage_amount' => (int) $meterReading->bill_amount,
+                'admin_fee' => 0,
+                'other_fees' => 0,
+                'total_amount' => (int) $meterReading->bill_amount,
+                'paid_amount' => 0,
+                'status' => Bill::STATUS_PUBLISHED,
+                'published_by' => $user->id,
+                'published_at' => Carbon::now(),
+            ]);
+        });
+
+        return response()->json([
+            'message' => 'Tagihan berhasil diterbitkan.',
+            'data' => $meterReading->fresh()->load('bill'),
+        ]);
+    }
+
+    /**
+     * Unpublish bill (admin only and unpaid)
+     */
+    public function unpublish(Request $request, MeterReading $meterReading): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$user->isAdmin()) {
+            return response()->json(['message' => 'Hanya admin yang dapat membatalkan tagihan.'], 403);
+        }
+
+        if (!$meterReading->bill_published_at) {
+            return response()->json(['message' => 'Tagihan belum diterbitkan.'], 400);
+        }
+
+        $bill = $meterReading->bill;
+        if ($bill && $bill->paid_amount > 0) {
+            return response()->json(['message' => 'Tidak dapat membatalkan tagihan yang sudah dibayar.'], 400);
+        }
+
+        DB::transaction(function () use ($meterReading) {
+            $meterReading->bill?->delete();
+
+            $meterReading->update([
+                'bill_published_at' => null,
+                'bill_published_by' => null,
+                'status' => 'recorded',
+            ]);
+        });
+
+        return response()->json([
+            'message' => 'Tagihan berhasil dibatalkan.',
+            'data' => $meterReading->fresh()->load('bill'),
+        ]);
+    }
+
+    /**
      * Get active bills for a customer
      */
     public function customerBills(Request $request, Customer $customer): JsonResponse
